@@ -1,0 +1,675 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#ccc;font-family:'Courier New',monospace;font-size:12px;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;background:#111}
+::-webkit-scrollbar-thumb{background:#333}
+.app{display:grid;grid-template-columns:170px 1fr;height:100vh;min-height:700px}
+
+/* SIDEBAR */
+.sidebar{background:#0a0a0a;border-right:1px solid #1e1e1e;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:10px}
+.logo{color:#fff;font-size:11px;font-weight:bold;letter-spacing:.05em;border-bottom:1px solid #1e1e1e;padding-bottom:8px}
+.logo span{color:#aaa;font-size:9px;display:block;font-weight:normal;margin-top:2px}
+.sec-title{color:#444;font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;margin-top:4px}
+.ctrl{margin-bottom:7px}
+.ctrl label{display:flex;justify-content:space-between;color:#888;font-size:9px;margin-bottom:3px}
+.ctrl label span{color:#FF9500;font-size:9px}
+input[type=range]{width:100%;height:2px;accent-color:#FF9500;cursor:pointer;background:#1e1e1e}
+select{width:100%;background:#111;border:1px solid #2a2a2a;color:#ccc;font-size:10px;padding:4px;border-radius:3px;font-family:inherit}
+.material-info{background:#111;border:1px solid #1e1e1e;border-radius:3px;padding:6px;font-size:9px;color:#666;margin-bottom:6px}
+.material-info span{color:#FF9500}
+.estado{background:#0d0d0d;border:1px solid #1e1e1e;border-radius:3px;padding:6px}
+.est-row{display:flex;align-items:center;gap:5px;font-size:9px;margin-bottom:3px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot.ok{background:#00FF88}
+.dot.warn{background:#FF9500}
+.dot.bad{background:#FF4444}
+.eff-bar-bg{background:#1a1a1a;border-radius:2px;height:3px;margin-top:4px}
+.eff-bar{height:3px;border-radius:2px;transition:width .5s;background:#FF9500}
+
+/* MAIN */
+.main{display:flex;flex-direction:column;overflow:hidden}
+
+/* TOP BAR */
+.topbar{background:#0a0a0a;border-bottom:1px solid #1e1e1e;display:grid;grid-template-columns:repeat(5,1fr);height:70px}
+.kpi{padding:10px 14px;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;justify-content:center}
+.kpi:last-child{border-right:none}
+.kpi-label{font-size:8px;color:#555;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.kpi-val{font-size:26px;font-weight:bold;letter-spacing:.02em;line-height:1}
+.kpi-unit{font-size:9px;color:#555;margin-top:2px}
+.kpi.orange .kpi-val{color:#FF9500}
+.kpi.green .kpi-val{color:#00FF88}
+.kpi.blue .kpi-val{color:#4FC3F7}
+.kpi.yellow .kpi-val{color:#FFD600}
+
+/* CONTENT */
+.content{flex:1;display:grid;grid-template-columns:420px 1fr;grid-template-rows:1fr 1fr;overflow:hidden}
+
+/* PANELS */
+.panel{border:1px solid #1a1a1a;position:relative;overflow:hidden;background:#0b0b0b}
+.panel-title{font-size:8px;color:#444;letter-spacing:.1em;text-transform:uppercase;padding:6px 10px 0;position:absolute;top:0;left:0;z-index:2}
+
+/* VIZ PANEL */
+.viz-panel{grid-row:1;grid-column:1;padding-top:20px}
+#viz-canvas{width:100%;height:100%;display:block}
+
+/* CHART PANEL */
+.chart-panel{grid-row:1;grid-column:2;padding-top:20px}
+.chart-tabs{position:absolute;top:5px;right:8px;display:flex;gap:4px;z-index:3}
+.tab{background:#111;border:1px solid #2a2a2a;color:#555;font-size:8px;padding:2px 7px;border-radius:2px;cursor:pointer;font-family:inherit;letter-spacing:.04em}
+.tab.active{background:#FF9500;color:#000;border-color:#FF9500}
+.chart-legend{position:absolute;top:7px;left:120px;display:flex;gap:10px;font-size:8px;color:#555;z-index:3}
+.leg{display:flex;align-items:center;gap:3px}
+.leg-sq{width:8px;height:8px;border-radius:1px}
+.chart-wrap{position:absolute;top:24px;left:0;right:0;bottom:0}
+.chart-wrap canvas{width:100%!important;height:100%!important}
+
+/* RESULTS PANEL */
+.results-panel{grid-row:2;grid-column:1}
+.results-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;height:100%}
+.res-cell{border-right:1px solid #1a1a1a;border-top:1px solid #1a1a1a;padding:10px 12px;display:flex;flex-direction:column;justify-content:center}
+.res-cell:nth-child(3n){border-right:none}
+.res-lbl{font-size:8px;color:#444;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.res-val{font-size:20px;font-weight:bold;color:#FF9500;letter-spacing:.02em}
+.res-unit{font-size:9px;color:#444}
+.res-val.green{color:#00FF88}
+.res-val.blue{color:#4FC3F7}
+.res-val.yellow{color:#FFD600}
+.res-val.white{color:#ddd}
+.formula-block{border-top:1px solid #1a1a1a;padding:8px 12px;font-size:9px;color:#555;line-height:1.6;background:#080808}
+.formula-block span{color:#4FC3F7}
+.formula-block b{color:#FF9500}
+
+/* CONVECTION PANEL */
+.conv-panel{grid-row:2;grid-column:2}
+.conv-inner{padding:18px 14px 10px;height:100%;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
+.formula-box{background:#0d0f0d;border:1px solid #1a2a1a;border-radius:3px;padding:8px 10px}
+.fbox-title{font-size:8px;color:#2a6a2a;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.fbox-eq{color:#00FF88;font-size:10px;font-family:'Courier New',monospace;line-height:1.7}
+.fbox-sub{color:#555;font-size:9px;line-height:1.5;margin-top:3px}
+.fbox-result{color:#FFD600;font-size:11px;font-weight:bold;margin-top:4px}
+.conv-rec{background:#1a1200;border:1px solid #3a2800;border-radius:3px;padding:7px 10px;font-size:9px;color:#FF9500;line-height:1.5}
+.conv-rec::before{content:"⚠ ";color:#FF9500}
+
+/* NAV BUTTON */
+.nav-btn{position:fixed;top:8px;right:12px;background:#FF9500;color:#000;font-family:'Courier New',monospace;font-size:9px;font-weight:bold;padding:5px 10px;border:none;cursor:pointer;border-radius:2px;letter-spacing:.06em;z-index:100}
+</style>
+</head>
+<body>
+
+<button class="nav-btn" onclick="sendPrompt('Dame recomendaciones para optimizar este secador solar en La Paz BCS ↗')">LIVE SIM</button>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">Deshidratador Solar — Simulador<span>Stack-effect thermodynamics · Buoyancy-driven airflow</span></div>
+
+  <div>
+    <div class="sec-title">Geometría del colector</div>
+    <div class="ctrl"><label>Material del colector</label>
+      <select id="material" onchange="update()">
+        <option value="wood">Madera comprimida</option>
+        <option value="metal">Lámina metálica</option>
+        <option value="concrete">Concreto</option>
+        <option value="composite">Composita fibra</option>
+      </select>
+    </div>
+    <div id="mat-info" class="material-info">Moderado costo, aislamiento básico<br>λ: <span id="mi-k">0.72</span> | U: <span id="mi-u">1.7</span> | Aislamiento: <span id="mi-a">30%</span></div>
+    <div class="ctrl"><label>Longitud del túnel<span id="lv-largo">4.0 m</span></label><input type="range" min="0.5" max="8" step="0.1" value="4" id="sl-largo" oninput="update()"></div>
+    <div class="ctrl"><label>Ancho del túnel<span id="lv-ancho">0.3 m</span></label><input type="range" min="0.1" max="2" step="0.05" value="0.3" id="sl-ancho" oninput="update()"></div>
+    <div class="ctrl"><label>Inclinación del vidrio<span id="lv-incl">8°</span></label><input type="range" min="5" max="50" step="1" value="8" id="sl-incl" oninput="update()"></div>
+    <div class="ctrl"><label>Altura del deshidratador<span id="lv-alto">2.0 m</span></label><input type="range" min="0.2" max="4" step="0.1" value="2.0" id="sl-alto" oninput="update()"></div>
+    <div class="ctrl"><label>Altura de la chimenea<span id="lv-chim">0.0 m</span></label><input type="range" min="0" max="2" step="0.1" value="0" id="sl-chim" oninput="update()"></div>
+    <div class="ctrl"><label>Apertura de entrada<span id="lv-inlet">0.08 m²</span></label><input type="range" min="0.01" max="0.5" step="0.01" value="0.08" id="sl-inlet" oninput="update()"></div>
+  </div>
+
+  <div>
+    <div class="sec-title">Ubicación geográfica</div>
+    <div class="ctrl"><label>Latitud<span id="lv-lat">24.0°</span></label><input type="range" min="-60" max="60" step="0.5" value="24" id="sl-lat" oninput="update()"></div>
+    <div class="ctrl"><label>Longitud<span id="lv-lon">-110.0°</span></label><input type="range" min="-180" max="180" step="0.5" value="-110" id="sl-lon" oninput="update()"></div>
+    <div class="ctrl"><label>Día del año<span id="lv-dia">172</span></label><input type="range" min="1" max="365" step="1" value="172" id="sl-dia" oninput="update()"></div>
+    <div id="geo-info" style="background:#111;border:1px solid #1e1e1e;border-radius:3px;padding:6px;font-size:9px;color:#555;margin-bottom:6px">
+      Mes aprox: <span id="gi-mes" style="color:#FF9500">Jun</span><br>
+      Alt. solar (mediodía): <span id="gi-sol" style="color:#FF9500">79.8°</span><br>
+      Irrad. máxima máx.: <span id="gi-rad" style="color:#FF9500">425 W/m²</span><br>
+      Hum actual / técnico: <span id="gi-hum" style="color:#FF9500">63%</span>
+    </div>
+  </div>
+
+  <div>
+    <div class="sec-title">Variables climáticas</div>
+    <div class="ctrl"><label>Irradiancia solar<span id="lv-irad">750 W/m²</span></label><input type="range" min="0" max="1100" step="10" value="750" id="sl-irad" oninput="update()"></div>
+    <div class="ctrl"><label>Temperatura ambiente<span id="lv-tamb">25.0°C</span></label><input type="range" min="10" max="50" step="0.5" value="25" id="sl-tamb" oninput="update()"></div>
+    <div class="ctrl"><label>Humedad relativa<span id="lv-hum">60%</span></label><input type="range" min="10" max="100" step="1" value="60" id="sl-hum" oninput="update()"></div>
+    <div class="ctrl"><label>Velocidad del viento<span id="lv-viento">2.0 m/s</span></label><input type="range" min="0" max="10" step="0.1" value="2" id="sl-viento" oninput="update()"></div>
+  </div>
+
+  <div>
+    <div class="sec-title">Pérdidas térmicas (Level 2)</div>
+    <div class="ctrl"><label>Aislamiento colector<span id="lv-aiscol">0.00</span></label><input type="range" min="0" max="0.2" step="0.01" value="0" id="sl-aiscol" oninput="update()"></div>
+    <div class="ctrl"><label>Largo ducto<span id="lv-lduc">1.5 m</span></label><input type="range" min="0" max="5" step="0.1" value="1.5" id="sl-lduc" oninput="update()"></div>
+    <div class="ctrl"><label>Diámetro ducto<span id="lv-dduc">0.15 m</span></label><input type="range" min="0.05" max="0.5" step="0.01" value="0.15" id="sl-dduc" oninput="update()"></div>
+    <div class="ctrl"><label>Aislamiento ducto<span id="lv-aisduc">0.05 m</span></label><input type="range" min="0" max="0.2" step="0.01" value="0.05" id="sl-aisduc" oninput="update()"></div>
+    <div class="ctrl"><label>Espesor pared cámara<span id="lv-epc">0.02 m</span></label><input type="range" min="0.01" max="0.15" step="0.005" value="0.02" id="sl-epc" oninput="update()"></div>
+    <div class="ctrl"><label>Aislamiento cámara<span id="lv-aiscam">0.30</span></label><input type="range" min="0" max="0.5" step="0.01" value="0.30" id="sl-aiscam" oninput="update()"></div>
+    <div class="ctrl"><label>Tipo de techo</label>
+      <select id="techo" onchange="update()">
+        <option value="common">Madera común</option>
+        <option value="glass">Vidrio simple</option>
+        <option value="poly">Policarbonato</option>
+        <option value="galv">Lámina galvanizada</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="estado">
+    <div class="sec-title" style="margin-top:0">Estado del sistema</div>
+    <div class="est-row"><div class="dot" id="dot-flujo"></div><span id="txt-flujo">Flujo de aire: —</span></div>
+    <div class="est-row"><div class="dot" id="dot-temp"></div><span id="txt-temp">Temperatura: —</span></div>
+    <div style="font-size:8px;color:#444;margin-top:4px">Eficiencia térmica</div>
+    <div class="eff-bar-bg"><div class="eff-bar" id="eff-bar"></div></div>
+    <div style="font-size:9px;color:#FF9500;text-align:right;margin-top:2px" id="eff-pct">0.0%</div>
+  </div>
+</div>
+
+<!-- MAIN AREA -->
+<div class="main">
+
+  <!-- KPI BAR -->
+  <div class="topbar">
+    <div class="kpi orange"><div class="kpi-label">Velocidad aire</div><div class="kpi-val" id="kpi-v">0.16</div><div class="kpi-unit">m/s</div></div>
+    <div class="kpi orange"><div class="kpi-label">T° Colector</div><div class="kpi-val" id="kpi-tcol">25.0</div><div class="kpi-unit">°C</div></div>
+    <div class="kpi green"><div class="kpi-label">T° Cámara</div><div class="kpi-val" id="kpi-tcam">25.0</div><div class="kpi-unit">°C</div></div>
+    <div class="kpi blue"><div class="kpi-label">HR Interior</div><div class="kpi-val" id="kpi-hr">54</div><div class="kpi-unit">%</div></div>
+    <div class="kpi yellow"><div class="kpi-label">Flujo másico</div><div class="kpi-val" id="kpi-mdot">55.3</div><div class="kpi-unit">kg/h</div></div>
+  </div>
+
+  <!-- CONTENT GRID -->
+  <div class="content">
+
+    <!-- VIZ PANEL -->
+    <div class="panel viz-panel">
+      <div class="panel-title">Diagrama de flujo — Simulación visual</div>
+      <canvas id="viz-canvas"></canvas>
+    </div>
+
+    <!-- CHART PANEL -->
+    <div class="panel chart-panel">
+      <div class="panel-title">Análisis de rendimiento</div>
+      <div class="chart-tabs">
+        <button class="tab active" onclick="setTab('daily')">Daily Cycle</button>
+        <button class="tab" onclick="setTab('incl')">vs Inclination</button>
+        <button class="tab" onclick="setTab('area')">vs Collector Area</button>
+      </div>
+      <div class="chart-legend">
+        <div class="leg"><div class="leg-sq" style="background:#FF9500"></div>Collector °C</div>
+        <div class="leg"><div class="leg-sq" style="background:#00FF88"></div>Chamber °C</div>
+        <div class="leg"><div class="leg-sq" style="background:#4FC3F7;opacity:.5"></div>Ambient °C</div>
+      </div>
+      <div class="chart-wrap"><canvas id="ch-main" role="img" aria-label="Análisis de rendimiento del deshidratador solar"></canvas></div>
+    </div>
+
+    <!-- RESULTS PANEL -->
+    <div class="panel results-panel">
+      <div class="panel-title">Detalle de resultados</div>
+      <div style="height:100%;display:flex;flex-direction:column">
+        <div class="results-grid" style="flex:1">
+          <div class="res-cell"><div class="res-lbl">Energía solar capturada</div><div class="res-val" id="r-esol">0.00</div><div class="res-unit">kW</div></div>
+          <div class="res-cell"><div class="res-lbl">ΔT (elevación)</div><div class="res-val green" id="r-dt">+0.0</div><div class="res-unit">°C</div></div>
+          <div class="res-cell"><div class="res-lbl">Material</div><div class="res-val white" style="font-size:11px" id="r-mat">Madera comprimida</div></div>
+          <div class="res-cell"><div class="res-lbl">Caudal volumétrico</div><div class="res-val blue" id="r-caudal">0.0</div><div class="res-unit">m³/h</div></div>
+          <div class="res-cell"><div class="res-lbl">Cap. Evaporación est.</div><div class="res-val yellow" id="r-evap">0.00</div><div class="res-unit">kg/h</div></div>
+          <div class="res-cell"><div class="res-lbl">Eficiencia dinámica colector</div><div class="res-val green" id="r-eff">0.0</div><div class="res-unit">%</div></div>
+        </div>
+        <div class="formula-block">
+          <span>ÁREA EFECTIVA COLECTOR:</span> <b id="r-area">0.00</b> m²
+        </div>
+      </div>
+    </div>
+
+    <!-- CONVECTION PANEL -->
+    <div class="panel conv-panel">
+      <div class="panel-title">Análisis de convección natural</div>
+      <div class="conv-inner">
+        <div class="formula-box">
+          <div class="fbox-title">Efecto chimenea (Bernoulli)</div>
+          <div class="fbox-eq">v = Cd · √(2·g·H_ef·ΔT/T₀)</div>
+          <div class="fbox-sub" id="chim-sub">Cd = 0.6 · H = 2.0 · 0.8 = 2.0 ·<br>ΔT = 0.0 · (0.0 - 0.0 - 0.0 / 298)</div>
+          <div class="fbox-result" id="chim-result">= 0.00 m/s</div>
+        </div>
+        <div class="formula-box">
+          <div class="fbox-title">Eficiencia dinámica del colector</div>
+          <div class="fbox-eq">η = τ·α·(T_col - T_amb) / G</div>
+          <div class="fbox-sub" id="eff-sub">= 0.85 · 0.95·(25.0 - 25.0) / 750<br>= 0.85 · 0.95 · 0.0 / 750</div>
+          <div class="fbox-result" id="eff-result">= 0.0%</div>
+        </div>
+        <div class="conv-rec" id="rec-text">Aumentar altura o apertura de entrada para mejorar la convección natural.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const matData = {
+  wood:      {k:0.72, U:1.7,  ais:30, label:'Madera comprimida'},
+  metal:     {k:50,   U:5.8,  ais:5,  label:'Lámina metálica'},
+  concrete:  {k:1.4,  U:2.1,  ais:20, label:'Concreto'},
+  composite: {k:0.3,  U:1.1,  ais:55, label:'Composita fibra'}
+};
+const techoData = {
+  common: {tau:0.0,  label:'Madera común'},
+  glass:  {tau:0.87, label:'Vidrio simple'},
+  poly:   {tau:0.82, label:'Policarbonato'},
+  galv:   {tau:0.0,  label:'Lámina galvanizada'}
+};
+const mesNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const rho=1.13, cp=1005, g=9.81, alpha=0.95, Cd=0.6, tau_default=0.85;
+
+function dayToMonth(d){return mesNames[Math.min(11,Math.floor((d-1)/30.44))];}
+function solarAlt(lat,dia){
+  const decl = 23.45*Math.sin(2*Math.PI*(284+dia)/365)*Math.PI/180;
+  const latR = lat*Math.PI/180;
+  return Math.asin(Math.sin(latR)*Math.sin(decl)+Math.cos(latR)*Math.cos(decl))*180/Math.PI;
+}
+function irrad24(dia, lat, hour, iradMax) {
+  const sr=6, ss=18;
+  if(hour<sr||hour>ss) return 0;
+  const ang=Math.PI*(hour-sr)/(ss-sr);
+  return Math.max(0, iradMax*Math.sin(ang));
+}
+
+function simular(p) {
+  const {largo,ancho,alto,incl,chimH,inlet,irad,tamb,hum,viento,aiscol,aiscam,epc,lduc,dduc,aisduc} = p;
+  const mat = matData[p.material];
+  const techo = techoData[p.techo];
+  const tau = techo.tau > 0 ? techo.tau : 0.0;
+  const area = largo * ancho;
+  const inclR = incl*Math.PI/180;
+  const kTilt = 1 + Math.sin(inclR)*0.2;
+  const Gs = irad * kTilt * tau;
+  const Qabs = Gs * alpha * area;
+  const hext = 5 + 4*viento;
+  const Uloss = mat.U + aiscol*2;
+  const Qloss_col = Uloss * area * 15;
+  const Qloss_cam = (1/(aiscam+0.15)) * (2*(largo+ancho)*alto + largo*ancho) * 8;
+  const Qloss_duc = lduc > 0 ? (2*Math.PI*0.025*(dduc/2))/(aisduc+0.01)*15 : 0;
+  const Qu = Math.max(0, Qabs - Qloss_col - Qloss_cam - Qloss_duc);
+  const Hef = alto + chimH;
+  const dT_est = Qu > 0 ? Math.min(50, Qu/(rho*cp*Math.max(0.01,inlet))) : 0;
+  const Tcol_est = tamb + dT_est + irad*0.018;
+  const dT_stack = Math.max(0, Tcol_est - tamb);
+  const vel_stack = Cd * Math.sqrt(2*g*Hef*dT_stack/(tamb+273+dT_stack));
+  const vel_wind = Math.sqrt(Math.max(0, 0.35*viento*viento));
+  const vel = Math.max(0.01, Math.sqrt(vel_stack*vel_stack + vel_wind*vel_wind));
+  const Ainlet = Math.min(inlet, ancho*alto*0.5);
+  const mdot = rho * vel * Ainlet;
+  const dT_real = mdot > 0.001 ? Qu/(mdot*cp) : 0;
+  const Tcol = tamb + Math.min(dT_real + irad*0.016, 65);
+  const Tcam = tamb + Math.min(dT_real*0.7 + irad*0.01, 55);
+  const HR_int = Math.max(5, hum*(1 - Math.min(0.9,(Tcam-tamb)/55)));
+  const mdot_kgh = mdot*3600;
+  const Qevap = Math.max(0, Qu*0.5);
+  const m_evap = Qevap/2430000*3600;
+  const caudal = mdot/rho*3600;
+  const eta = Gs*area > 0 ? Math.min(99, (Qu/(Gs*area))*100) : 0;
+  const eff_din = irad > 0 ? Math.min(99, tau*alpha*(Tcol-tamb)/irad*100) : 0;
+  return {vel:+vel.toFixed(2), Tcol:+Tcol.toFixed(1), Tcam:+Tcam.toFixed(1),
+    HR_int:Math.round(HR_int), mdot:+mdot_kgh.toFixed(1), Gs:Math.round(Gs),
+    Qabs:+(Qabs/1000).toFixed(2), Qu:+(Qu/1000).toFixed(2), dT:+dT_real.toFixed(1),
+    m_evap:+m_evap.toFixed(2), caudal:+caudal.toFixed(1), eta:+eta.toFixed(1),
+    eff_din:+eff_din.toFixed(1), area:+(area).toFixed(2), vel_stack:+vel_stack.toFixed(3),
+    Hef:+Hef.toFixed(1), tamb, dT_stack:+dT_stack.toFixed(1), tau:+tau.toFixed(2)};
+}
+
+function getP() {
+  return {
+    largo:+document.getElementById('sl-largo').value,
+    ancho:+document.getElementById('sl-ancho').value,
+    alto:+document.getElementById('sl-alto').value,
+    incl:+document.getElementById('sl-incl').value,
+    chimH:+document.getElementById('sl-chim').value,
+    inlet:+document.getElementById('sl-inlet').value,
+    irad:+document.getElementById('sl-irad').value,
+    tamb:+document.getElementById('sl-tamb').value,
+    hum:+document.getElementById('sl-hum').value,
+    viento:+document.getElementById('sl-viento').value,
+    aiscol:+document.getElementById('sl-aiscol').value,
+    aiscam:+document.getElementById('sl-aiscam').value,
+    epc:+document.getElementById('sl-epc').value,
+    lduc:+document.getElementById('sl-lduc').value,
+    dduc:+document.getElementById('sl-dduc').value,
+    aisduc:+document.getElementById('sl-aisduc').value,
+    material:document.getElementById('material').value,
+    techo:document.getElementById('techo').value,
+    lat:+document.getElementById('sl-lat').value,
+    lon:+document.getElementById('sl-lon').value,
+    dia:+document.getElementById('sl-dia').value,
+  };
+}
+
+function updLabels(p) {
+  document.getElementById('lv-largo').textContent=p.largo.toFixed(1)+' m';
+  document.getElementById('lv-ancho').textContent=p.ancho.toFixed(1)+' m';
+  document.getElementById('lv-incl').textContent=p.incl+'°';
+  document.getElementById('lv-alto').textContent=p.alto.toFixed(1)+' m';
+  document.getElementById('lv-chim').textContent=p.chimH.toFixed(1)+' m';
+  document.getElementById('lv-inlet').textContent=p.inlet.toFixed(2)+' m²';
+  document.getElementById('lv-lat').textContent=p.lat.toFixed(1)+'°';
+  document.getElementById('lv-lon').textContent=p.lon.toFixed(1)+'°';
+  document.getElementById('lv-dia').textContent=p.dia;
+  document.getElementById('lv-irad').textContent=p.irad+' W/m²';
+  document.getElementById('lv-tamb').textContent=p.tamb.toFixed(1)+'°C';
+  document.getElementById('lv-hum').textContent=p.hum+'%';
+  document.getElementById('lv-viento').textContent=p.viento.toFixed(1)+' m/s';
+  document.getElementById('lv-aiscol').textContent=p.aiscol.toFixed(2);
+  document.getElementById('lv-lduc').textContent=p.lduc.toFixed(1)+' m';
+  document.getElementById('lv-dduc').textContent=p.dduc.toFixed(2)+' m';
+  document.getElementById('lv-aisduc').textContent=p.aisduc.toFixed(2)+' m';
+  document.getElementById('lv-epc').textContent=p.epc.toFixed(3)+' m';
+  document.getElementById('lv-aiscam').textContent=p.aiscam.toFixed(2);
+  const mat = matData[p.material];
+  document.getElementById('mi-k').textContent=mat.k;
+  document.getElementById('mi-u').textContent=mat.U;
+  document.getElementById('mi-a').textContent=mat.ais+'%';
+  const sol = solarAlt(p.lat, p.dia);
+  document.getElementById('gi-mes').textContent=dayToMonth(p.dia);
+  document.getElementById('gi-sol').textContent=sol.toFixed(1)+'°';
+  document.getElementById('gi-rad').textContent=Math.round(p.irad * (1+Math.sin(sol*Math.PI/180)*0.1))+' W/m²';
+  document.getElementById('gi-hum').textContent=p.hum+'%';
+}
+
+function updKPIs(r) {
+  document.getElementById('kpi-v').textContent=r.vel;
+  document.getElementById('kpi-tcol').textContent=r.Tcol;
+  document.getElementById('kpi-tcam').textContent=r.Tcam;
+  document.getElementById('kpi-hr').textContent=r.HR_int;
+  document.getElementById('kpi-mdot').textContent=r.mdot;
+}
+
+function updResults(r, p) {
+  document.getElementById('r-esol').textContent=r.Qu;
+  document.getElementById('r-dt').textContent='+'+r.dT;
+  document.getElementById('r-mat').textContent=matData[p.material].label;
+  document.getElementById('r-caudal').textContent=r.caudal;
+  document.getElementById('r-evap').textContent=r.m_evap;
+  document.getElementById('r-eff').textContent=r.eff_din;
+  document.getElementById('r-area').textContent=r.area;
+  document.getElementById('chim-sub').textContent=
+    `Cd = 0.6 · H = ${r.Hef} · 0.8 = ${(r.Hef*0.8).toFixed(1)}\nΔT = ${r.dT_stack} · (${r.Tcol} - ${r.tamb} - ${r.tamb} / 298)`;
+  document.getElementById('chim-result').textContent=`= ${r.vel_stack} m/s`;
+  document.getElementById('eff-sub').textContent=
+    `= ${r.tau} · 0.95 · (${r.Tcol} - ${r.tamb}) / ${p.irad}\n= ${r.tau} · 0.95 · ${r.dT.toFixed(1)} / ${p.irad}`;
+  document.getElementById('eff-result').textContent=`= ${r.eff_din}%`;
+  const rec = r.vel < 0.1 ? 'Aumentar altura o apertura de entrada para mejorar la convección natural.' :
+              r.Tcam < 35 ? 'Aumentar irradiancia o reducir pérdidas. Revisar aislamiento de la cámara.' :
+              r.eff_din > 60 ? 'Excelente eficiencia. Sistema optimizado para condiciones actuales.' :
+              'Sistema operando en rango normal. Considera aumentar área del colector.';
+  document.getElementById('rec-text').textContent=rec;
+}
+
+function updEstado(r) {
+  const df=document.getElementById('dot-flujo'), dt=document.getElementById('dot-temp');
+  const tf=document.getElementById('txt-flujo'), tt=document.getElementById('txt-temp');
+  if(r.vel<0.05){df.className='dot bad';tf.textContent='Flujo de aire: insuficiente';}
+  else if(r.vel<0.15){df.className='dot warn';tf.textContent='Flujo de aire: bajo';}
+  else{df.className='dot ok';tf.textContent='Flujo de aire: adecuado';}
+  if(r.Tcam<35){dt.className='dot bad';tt.textContent='Temperatura: baja';}
+  else if(r.Tcam<50){dt.className='dot warn';tt.textContent='Temperatura: moderada';}
+  else{dt.className='dot ok';tt.textContent='Temperatura: óptima';}
+  const eb=document.getElementById('eff-bar');
+  eb.style.width=r.eta+'%';
+  eb.style.background=r.eta>60?'#00FF88':r.eta>30?'#FF9500':'#FF4444';
+  document.getElementById('eff-pct').textContent=r.eta.toFixed(1)+'%';
+}
+
+// VIZ CANVAS
+const vizC = document.getElementById('viz-canvas');
+const vx = vizC.getContext('2d');
+let animFrame=0;
+
+function drawViz(p, r) {
+  const W=vizC.width, H=vizC.height;
+  if(!W||!H) return;
+  vx.fillStyle='#0b0b0b'; vx.fillRect(0,0,W,H);
+  animFrame++;
+
+  const intensity = Math.min(1, p.irad/1000);
+  const t = animFrame*0.04;
+
+  // Sun
+  const sunX=W*0.18, sunY=H*0.18;
+  const sunR = 28 + intensity*10;
+  vx.fillStyle=`rgba(255,${150+intensity*80},0,${0.15+intensity*0.08})`;
+  vx.beginPath(); vx.arc(sunX,sunY,sunR*2.2,0,Math.PI*2); vx.fill();
+  vx.fillStyle=`rgba(255,${150+intensity*80},0,0.9)`;
+  vx.beginPath(); vx.arc(sunX,sunY,sunR,0,Math.PI*2); vx.fill();
+
+  // Solar rays animated
+  if(p.irad > 50) {
+    vx.strokeStyle=`rgba(255,200,0,${0.3+intensity*0.3})`;
+    vx.lineWidth=1;
+    vx.setLineDash([5,5]);
+    vx.lineDashOffset = -t*8;
+    const targets = [[W*0.42,H*0.25],[W*0.52,H*0.3],[W*0.45,H*0.45]];
+    for(const [tx,ty] of targets){
+      vx.beginPath(); vx.moveTo(sunX+sunR*0.7,sunY+sunR*0.7);
+      vx.lineTo(tx,ty); vx.stroke();
+    }
+    vx.setLineDash([]);
+  }
+
+  // Labels
+  vx.font='9px Courier New'; vx.fillStyle='#FF9500';
+  vx.fillText('ECTOR SOLAR (TÚNEL INVERNADERO)', 14, 24);
+
+  // Collector / tunnel body
+  const CX=W*0.38, CY=H*0.22, CW=W*0.22, CH=H*0.55;
+  const inclR=p.incl*Math.PI/180;
+  const roofTilt = Math.sin(inclR)*CW*0.4;
+
+  vx.fillStyle='#1a1a1a'; vx.strokeStyle='#2a2a2a'; vx.lineWidth=1;
+  vx.fillRect(CX, CY+roofTilt, CW, CH-roofTilt);
+  vx.strokeRect(CX, CY+roofTilt, CW, CH-roofTilt);
+
+  // Glazing (skylight / tragaluz)
+  vx.fillStyle=`rgba(70,180,220,${0.18+intensity*0.12})`;
+  vx.strokeStyle='rgba(100,210,250,0.5)'; vx.lineWidth=1;
+  vx.beginPath();
+  vx.moveTo(CX, CY+roofTilt); vx.lineTo(CX+CW, CY);
+  vx.lineTo(CX+CW, CY+8); vx.lineTo(CX, CY+roofTilt+8);
+  vx.closePath(); vx.fill(); vx.stroke();
+
+  // Trays
+  const nTrays=2;
+  for(let i=0;i<nTrays;i++){
+    const ty = CY+roofTilt+20 + i*(CH-roofTilt-30)/(nTrays);
+    const trayW = CW-10;
+    const tHot = i===0 ? r.Tcol : r.Tcam;
+    const norm = Math.min(1, Math.max(0,(tHot-25)/45));
+    const tR=Math.round(30+norm*200), tG=Math.round(180-norm*160);
+    vx.fillStyle=`rgba(${tR},${tG},10,0.55)`;
+    vx.fillRect(CX+5, ty, trayW, 12);
+    vx.strokeStyle='#3a3a3a'; vx.lineWidth=0.5;
+    vx.strokeRect(CX+5, ty, trayW, 12);
+    vx.font='8px Courier New'; vx.fillStyle='#aaa';
+    vx.fillText(`Charola ${i+1}`, CX+8, ty+9);
+  }
+
+  // Airflow arrows animated
+  if(r.vel>0.03) {
+    const nArr=Math.max(2,Math.round(r.vel*8));
+    const arrowT = (t*r.vel*3)%1;
+    for(let i=0;i<nArr;i++){
+      const frac=((i/nArr)+arrowT)%1;
+      const ax=CX+8+frac*(CW-16);
+      const ay=CY+roofTilt+CH*0.55;
+      vx.strokeStyle=`rgba(100,200,255,${0.5+Math.sin(frac*Math.PI)*0.3})`;
+      vx.lineWidth=1.2;
+      vx.beginPath();
+      vx.moveTo(ax-5,ay); vx.lineTo(ax+5,ay);
+      vx.moveTo(ax+5,ay); vx.lineTo(ax+2,ay-3);
+      vx.moveTo(ax+5,ay); vx.lineTo(ax+2,ay+3);
+      vx.stroke();
+    }
+  }
+
+  // Inlet/outlet apertures
+  const inH=Math.max(4,Math.min(20,p.inlet*80));
+  const outH=inH*1.3;
+  vx.fillStyle='#185FA5';
+  vx.fillRect(CX-5, CY+roofTilt+CH-inH-10, 4, inH);
+  vx.fillStyle='#993C1D';
+  vx.fillRect(CX+CW+1, CY+roofTilt+CH-outH-10, 4, outH);
+
+  // CÁMARA box
+  const KX=CX+CW+30, KY=CY+H*0.08, KW=W*0.24, KH=H*0.42;
+  const kNorm=Math.min(1,Math.max(0,(r.Tcam-25)/45));
+  const kR=Math.round(20+kNorm*180),kG=Math.round(160-kNorm*140);
+  vx.fillStyle=`rgba(${kR},${kG},10,0.18)`;
+  vx.strokeStyle=`rgba(${kR+40},${kG+40},20,0.4)`;
+  vx.lineWidth=1;
+  vx.fillRect(KX, KY, KW, KH); vx.strokeRect(KX, KY, KW, KH);
+
+  vx.font='9px Courier New'; vx.fillStyle='#4FC3F7';
+  vx.fillText('CÁMARA', KX+6, KY+12);
+  vx.fillStyle='#FF9500';
+  vx.font='8px Courier New';
+  vx.fillText(`▲ ${r.vel} m/s`, KX+6, KY+24);
+  vx.fillStyle='#fff'; vx.font='bold 13px Courier New';
+  vx.fillText(`${r.Tcam}°C`, KX+6, KY+44);
+
+  // Tray indicators in cámara
+  for(let i=0;i<2;i++){
+    const ty2=KY+56+i*38;
+    const tnorm=Math.min(1,Math.max(0,(r.Tcam-20)/50));
+    const tr2=Math.round(30+tnorm*180),tg2=Math.round(180-tnorm*150);
+    vx.fillStyle=`rgba(${tr2},${tg2},10,0.5)`;
+    vx.fillRect(KX+5, ty2, KW-10, 14);
+    vx.strokeStyle='#2a2a2a'; vx.lineWidth=0.5;
+    vx.strokeRect(KX+5, ty2, KW-10, 14);
+    vx.fillStyle='#888'; vx.font='8px Courier New';
+    vx.fillText(`T: ${i===0?r.Tcol:r.Tcam}°C`, KX+8, ty2+10);
+  }
+
+  // HR badge
+  const hrNorm=Math.min(1,r.HR_int/100);
+  vx.fillStyle='rgba(24,95,165,0.25)';
+  vx.fillRect(KX+KW-38, KY+KH-24, 36, 18);
+  vx.fillStyle='#4FC3F7'; vx.font='9px Courier New';
+  vx.fillText(`${r.HR_int}%`, KX+KW-30, KY+KH-11);
+
+  // Dimension line
+  vx.strokeStyle='#2a2a2a'; vx.lineWidth=0.5;
+  vx.beginPath(); vx.moveTo(CX, CY+roofTilt+CH+10); vx.lineTo(CX+CW, CY+roofTilt+CH+10); vx.stroke();
+  vx.fillStyle='#333'; vx.font='8px Courier New'; vx.textAlign='center';
+  vx.fillText(`L/A = ${p.largo.toFixed(1)} × ${p.ancho.toFixed(1)} m`, CX+CW/2, CY+roofTilt+CH+22);
+  vx.textAlign='start';
+  vx.fillText(`${(p.largo*p.ancho).toFixed(2)} m²`, CX+CW/2-15, CY+roofTilt+CH+32);
+  vx.textAlign='start';
+
+  // Height annotation
+  vx.fillStyle='#333'; vx.font='8px Courier New';
+  vx.fillText(`${p.alto.toFixed(1)}m`, CX-22, CY+roofTilt+CH/2+4);
+  vx.strokeStyle='#222'; vx.lineWidth=0.5;
+  vx.beginPath(); vx.moveTo(CX-4,CY+roofTilt); vx.lineTo(CX-4, CY+roofTilt+CH); vx.stroke();
+}
+
+// Chart setup
+let currentTab = 'daily';
+const chMain = new Chart(document.getElementById('ch-main'), {
+  type:'line',
+  data:{
+    labels:[],
+    datasets:[
+      {label:'Collector °C',data:[],borderColor:'#FF9500',borderWidth:2,tension:.4,pointRadius:0,fill:true,backgroundColor:'rgba(255,149,0,0.08)'},
+      {label:'Chamber °C', data:[],borderColor:'#00FF88',borderWidth:1.5,tension:.4,pointRadius:0,fill:true,backgroundColor:'rgba(0,255,136,0.05)'},
+      {label:'Ambient °C', data:[],borderColor:'rgba(79,195,247,0.4)',borderWidth:1,tension:.4,pointRadius:0,fill:false,borderDash:[3,4]}
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false, animation:{duration:300},
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#444',font:{size:8,family:'Courier New'}}},
+      y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#444',font:{size:8,family:'Courier New'}},position:'left'}
+    }
+  }
+});
+
+function setTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  updChart(getP());
+}
+
+function updChart(p) {
+  if(currentTab==='daily'){
+    const hours=Array.from({length:25},(_,i)=>i);
+    chMain.data.labels=hours.map(h=>h+':00');
+    const tCol=[],tCam=[],tAmb=[];
+    for(const h of hours){
+      const iH=irrad24(p.dia,p.lat,h,p.irad);
+      const r2=simular({...p,irad:iH});
+      const tA=p.tamb+(h>=8&&h<=18?(h-8)*0.8-Math.max(0,(h-15)*1.2):0);
+      tCol.push(r2.Tcol); tCam.push(r2.Tcam); tAmb.push(+tA.toFixed(1));
+    }
+    chMain.data.datasets[0].data=tCol;
+    chMain.data.datasets[1].data=tCam;
+    chMain.data.datasets[2].data=tAmb;
+  } else if(currentTab==='incl'){
+    const incls=Array.from({length:19},(_,i)=>5+i*2.5);
+    chMain.data.labels=incls.map(v=>v.toFixed(0)+'°');
+    chMain.data.datasets[0].data=incls.map(v=>simular({...p,incl:v}).Tcol);
+    chMain.data.datasets[1].data=incls.map(v=>simular({...p,incl:v}).Tcam);
+    chMain.data.datasets[2].data=incls.map(()=>p.tamb);
+  } else {
+    const areas=Array.from({length:16},(_,i)=>0.3+i*0.5);
+    chMain.data.labels=areas.map(v=>v.toFixed(1)+'m²');
+    chMain.data.datasets[0].data=areas.map(v=>simular({...p,largo:Math.sqrt(v),ancho:Math.sqrt(v)}).Tcol);
+    chMain.data.datasets[1].data=areas.map(v=>simular({...p,largo:Math.sqrt(v),ancho:Math.sqrt(v)}).Tcam);
+    chMain.data.datasets[2].data=areas.map(()=>p.tamb);
+  }
+  chMain.update('none');
+}
+
+function resizeViz(){
+  const c=vizC.parentElement;
+  vizC.width=c.clientWidth; vizC.height=c.clientHeight;
+}
+
+let animId;
+function animate(){
+  const p=getP();
+  resizeViz();
+  drawViz(p, simular(p));
+  animId=requestAnimationFrame(animate);
+}
+
+function update(){
+  const p=getP(); updLabels(p);
+  const r=simular(p);
+  updKPIs(r); updResults(r,p); updEstado(r); updChart(p);
+}
+
+['sl-largo','sl-ancho','sl-alto','sl-incl','sl-chim','sl-inlet',
+ 'sl-irad','sl-tamb','sl-hum','sl-viento','sl-aiscol','sl-aiscam',
+ 'sl-epc','sl-lduc','sl-dduc','sl-aisduc','sl-lat','sl-lon','sl-dia',
+ 'material','techo'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input',update);
+});
+
+window.addEventListener('resize',resizeViz);
+setTimeout(()=>{update();animate();},150);
+</script>
+</body>
+</html>
